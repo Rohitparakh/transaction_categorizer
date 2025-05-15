@@ -12,7 +12,7 @@ st.title("💼 Transaction Classifier – Business Expense Categorizer")
 uploaded_file = st.file_uploader("Upload your bank statement (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
-    header_row = st.number_input("Which row contains headers?", min_value=1, step=1, value=1)
+    header_row = st.number_input("Which row contains headers?", min_value=1, step=1, value=17)
 
     try:
         # Save uploaded file to temp file for openpyxl
