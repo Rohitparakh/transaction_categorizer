@@ -9,16 +9,17 @@ CATEGORY_KEYWORDS = {
 }
 
 def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: str, col_deposit: str, col_serial: str) -> pd.DataFrame:
-    # Initialize columns with empty values first
-    df["Expense Type"] = ""
-    df["Business Category"] = ""
+    # Add empty columns if not present
+    if "Expense Type" not in df.columns:
+        df["Expense Type"] = ""
+    if "Business Category" not in df.columns:
+        df["Business Category"] = ""
 
     def is_valid_serial(val):
         if pd.isna(val):
             return False
-        # Accept only numeric serial numbers (int or float)
         try:
-            float_val = float(val)
+            float(val)
             return True
         except:
             return False
@@ -38,11 +39,10 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
     for idx in range(start_idx, len(df)):
         val = df.at[idx, col_serial]
         if not is_valid_serial(val):
-            break  # stop processing further rows
+            break
 
         remark = str(df.at[idx, col_remarks]).lower()
 
-        # Safe numeric conversion
         try:
             withdrawal = float(str(df.at[idx, col_withdrawal]).replace(",", "").strip() or 0)
         except:
