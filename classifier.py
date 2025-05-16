@@ -1,15 +1,6 @@
 import pandas as pd
 
-CATEGORY_KEYWORDS = {
-    "Software": ["naimish.dg"],
-    "Travel": ["cab"],
-    "Office Supplies": ["Google"],
-    "Client Entertainment": ["madhurimamukher"],
-    "Employee Relaxation": ["vamsi0597"],
-}
-
-def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: str, col_deposit: str, col_serial: str) -> pd.DataFrame:
-    # Add empty columns if not present
+def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: str, col_deposit: str, col_serial: str, category_keywords: dict) -> pd.DataFrame:
     if "Expense Type" not in df.columns:
         df["Expense Type"] = ""
     if "Business Category" not in df.columns:
@@ -24,7 +15,6 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
         except:
             return False
 
-    # Find start index where serial number is valid
     start_idx = None
     for idx, val in df[col_serial].items():
         if is_valid_serial(val):
@@ -32,10 +22,8 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
             break
 
     if start_idx is None:
-        # No valid serial numbers found, return original df
         return df
 
-    # Process rows from start_idx onward until serial number invalid or empty
     for idx in range(start_idx, len(df)):
         val = df.at[idx, col_serial]
         if not is_valid_serial(val):
@@ -54,7 +42,7 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
 
         if withdrawal > 0:
             matched = False
-            for category, keywords in CATEGORY_KEYWORDS.items():
+            for category, keywords in category_keywords.items():
                 if any(keyword.lower() in remark for keyword in keywords):
                     df.at[idx, "Expense Type"] = "Business"
                     df.at[idx, "Business Category"] = category

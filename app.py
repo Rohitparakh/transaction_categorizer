@@ -5,13 +5,70 @@ from io import BytesIO
 from openpyxl import load_workbook
 from copy import copy
 import tempfile
+import json
+
+from streamlit_local_storage import LocalStorage
 
 st.set_page_config(page_title="Transaction Classifier", layout="centered")
 st.title("💼 Transaction Classifier – Business Expense Categorizer")
 
+# --- LocalStorage for categories ---
+localS = LocalStorage()
+categories_json = localS.getItem("categories")
+if categories_json:
+    categories = json.loads(categories_json)
+else:
+    categories = {
+        "Software": ["naimish.dg"],
+        "Travel": ["cab"],
+        "Office Supplies": ["Google"],
+        "Client Entertainment": ["madhurimamukher"],
+        "Employee Relaxation": ["vamsi0597"],
+    }
+
+
+
 uploaded_file = st.file_uploader("Upload your bank statement (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
+    st.subheader("Business Categories & Keywords")
+    st.write("Add/edit categories and keywords. These will be saved in your browser.")
+
+    if "category_inputs" not in st.session_state:
+        st.session_state.category_inputs = categories.copy()
+    
+    def save_categories():
+        localS.setItem("categories", json.dumps(st.session_state.category_inputs))
+
+    for cat in list(st.session_state.category_inputs.keys()):
+        with st.expander(f"Category: {cat}", expanded=False):
+            keywords = st.text_area(
+                f"Keywords for '{cat}' (comma separated)",
+                value=", ".join(st.session_state.category_inputs[cat]),
+                key=f"kw_{cat}_text_area"
+            )
+            st.session_state.category_inputs[cat] = [k.strip() for k in keywords.split(",") if k.strip()]
+
+            if st.button(f"Delete Category '{cat}'", key=f"del_{cat}_button"):
+                del st.session_state.category_inputs[cat]
+                st.rerun()
+
+
+    # Add new category
+    new_cat = st.text_input("Add new category", key="new_cat")
+    if st.button("Add Category"):
+        if new_cat and new_cat not in st.session_state.category_inputs:
+            st.session_state.category_inputs[new_cat] = []
+            st.rerun()
+
+
+    # Save to localStorage
+    if st.button("Save Categories"):
+        localS.setItem("categories", json.dumps(st.session_state.category_inputs))
+        st.success("Categories saved to your browser!")
+
+    # Use the latest categories for classification
+    categories_for_classifier = st.session_state.category_inputs
     header_row = st.number_input("Which row contains headers?", min_value=1, step=1, value=17)
 
     try:
@@ -36,7 +93,14 @@ if uploaded_file:
         col_deposit = st.selectbox("💰 Deposit Amount column", col_options, index=col_options.index("Deposit Amt (INR)") if "Deposit Amt (INR)" in col_options else 0)
 
         if st.button("🔍 Process Transactions"):
-            processed_df = classify_transactions(df.copy(), col_remarks, col_withdrawal, col_deposit, col_serial)
+            processed_df = classify_transactions(
+                df.copy(),
+                col_remarks,
+                col_withdrawal,
+                col_deposit,
+                col_serial,
+                categories_for_classifier
+            )
             st.success("✅ File processed successfully!")
             st.dataframe(processed_df)
 
