@@ -1,10 +1,14 @@
 import pandas as pd
 
-def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: str, col_deposit: str, col_serial: str, category_keywords: dict) -> pd.DataFrame:
+def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: str, col_deposit: str, col_serial: str, category_data: dict) -> pd.DataFrame:
     if "Expense Type" not in df.columns:
         df["Expense Type"] = ""
-    if "Business Category" not in df.columns:
-        df["Business Category"] = ""
+    if "Expense Category" not in df.columns:
+        df["Expense Category"] = ""
+    if "Expense Subcategory" not in df.columns:
+        df["Expense Subcategory"] = ""
+    if "Remarks" not in df.columns:
+        df["Remarks"] = ""
 
     def is_valid_serial(val):
         if pd.isna(val):
@@ -30,7 +34,6 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
             break
 
         remark = str(df.at[idx, col_remarks]).lower()
-
         try:
             withdrawal = float(str(df.at[idx, col_withdrawal]).replace(",", "").strip() or 0)
         except:
@@ -42,17 +45,25 @@ def classify_transactions(df: pd.DataFrame, col_remarks: str, col_withdrawal: st
 
         if withdrawal > 0:
             matched = False
-            for category, keywords in category_keywords.items():
-                if any(keyword.lower() in remark for keyword in keywords):
-                    df.at[idx, "Expense Type"] = "Business"
-                    df.at[idx, "Business Category"] = category
-                    matched = True
+            for category, subcats in category_data.items():
+                for subcat, keywords in subcats.items():
+                    if any(keyword.lower() in remark for keyword in keywords):
+                        df.at[idx, "Expense Type"] = "Business"
+                        df.at[idx, "Expense Category"] = category
+                        df.at[idx, "Expense Subcategory"] = subcat
+                        matched = True
+                        break
+                if matched:
                     break
             if not matched:
                 df.at[idx, "Expense Type"] = "Uncategorised"
-                df.at[idx, "Business Category"] = ""
+                df.at[idx, "Expense Category"] = ""
+                df.at[idx, "Expense Subcategory"] = ""
         else:
             df.at[idx, "Expense Type"] = ""
-            df.at[idx, "Business Category"] = ""
+            df.at[idx, "Expense Category"] = ""
+            df.at[idx, "Expense Subcategory"] = ""
+
+        df.at[idx, "Remarks"] = ""  # Always empty
 
     return df
