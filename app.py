@@ -13,6 +13,14 @@ from streamlit_local_storage import LocalStorage
 
 st.set_page_config(page_title="Transaction Classifier", layout="centered")
 st.title("💼 Transaction Classifier – Business Expense Categorizer")
+hide_dataframe_row_index = """
+    <style>
+        div[data-testid="stElementToolbarButton"]:first-of-type {
+            display: none !important;
+        }
+    </style>
+"""
+st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
 
 # --- LocalStorage for category hierarchy ---
 localS = LocalStorage()
